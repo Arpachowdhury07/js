@@ -1,21 +1,25 @@
 import { ScrollShadow } from "@/components/ui/ScrollShadow/ScrollShadow";
 import { cn } from "@/lib/utils";
 import { MarkdownRenderer } from "components/contract-components/published-contract/markdown-renderer";
-import { AlertCircleIcon, ThumbsDownIcon, ThumbsUpIcon } from "lucide-react";
+import {
+  AlertCircleIcon,
+  MessageCircleIcon,
+  ThumbsDownIcon,
+  ThumbsUpIcon,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { ThirdwebClient } from "thirdweb";
-import type {
-  NebulaUserMessage,
-  NebulaUserMessageContent,
-} from "../../api/types";
-import { NebulaIcon } from "../../icons/NebulaIcon";
 import { Reasoning } from "../Reasoning/Reasoning";
 
-export type CustomChatMessage =
-  | {
-      type: "user";
-      content: NebulaUserMessageContent;
-    }
+// Define local types
+type UserMessageContent = { type: "text"; text: string };
+type UserMessage = {
+  type: "user";
+  content: UserMessageContent[];
+};
+
+type CustomChatMessage =
+  | UserMessage
   | {
       text: string;
       type: "error";
@@ -25,11 +29,10 @@ export type CustomChatMessage =
       type: "presence";
     }
   | {
-      // assistant type message loaded from history doesn't have request_id
       request_id: string | undefined;
       text: string;
       type: "assistant";
-      feedback?: 1 | -1; // Add feedback tracking for custom chat
+      feedback?: 1 | -1;
     };
 
 export function CustomChats(props: {
@@ -42,7 +45,7 @@ export function CustomChats(props: {
   setEnableAutoScroll: (enable: boolean) => void;
   enableAutoScroll: boolean;
   useSmallText?: boolean;
-  sendMessage: (message: NebulaUserMessage) => void;
+  sendMessage: (message: UserMessage) => void;
   onFeedback?: (messageIndex: number, feedback: 1 | -1) => void;
 }) {
   const { messages, setEnableAutoScroll, enableAutoScroll } = props;
@@ -100,14 +103,6 @@ export function CustomChats(props: {
               const isMessagePending =
                 props.isChatStreaming && index === props.messages.length - 1;
 
-              const shouldHideMessage =
-                message.type === "user" &&
-                message.content.every((msg) => msg.type === "transaction");
-
-              if (shouldHideMessage) {
-                return null;
-              }
-
               return (
                 <div
                   className={cn(
@@ -144,7 +139,7 @@ function RenderMessage(props: {
   messageIndex: number;
   isMessagePending: boolean;
   client: ThirdwebClient;
-  sendMessage: (message: NebulaUserMessage) => void;
+  sendMessage: (message: UserMessage) => void;
   nextMessage: CustomChatMessage | undefined;
   authToken: string;
   sessionId: string | undefined;
@@ -189,12 +184,8 @@ function RenderMessage(props: {
             message.type === "presence" && "border bg-card",
           )}
         >
-          {message.type === "presence" && (
-            <NebulaIcon className="size-5 text-muted-foreground" />
-          )}
-
-          {message.type === "assistant" && (
-            <NebulaIcon className="size-5 text-muted-foreground" />
+          {(message.type === "presence" || message.type === "assistant") && (
+            <MessageCircleIcon className="size-5 text-muted-foreground" />
           )}
 
           {message.type === "error" && (
@@ -287,7 +278,7 @@ function RenderResponse(props: {
   message: CustomChatMessage;
   isMessagePending: boolean;
   client: ThirdwebClient;
-  sendMessage: (message: NebulaUserMessage) => void;
+  sendMessage: (message: UserMessage) => void;
   nextMessage: CustomChatMessage | undefined;
   sessionId: string | undefined;
   authToken: string;
