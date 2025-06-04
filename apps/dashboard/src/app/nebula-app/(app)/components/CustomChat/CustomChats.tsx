@@ -12,13 +12,13 @@ import type { ThirdwebClient } from "thirdweb";
 import { Reasoning } from "../Reasoning/Reasoning";
 
 // Define local types
-type UserMessageContent = { type: "text"; text: string };
-type UserMessage = {
+export type UserMessageContent = { type: "text"; text: string };
+export type UserMessage = {
   type: "user";
   content: UserMessageContent[];
 };
 
-type CustomChatMessage =
+export type CustomChatMessage =
   | UserMessage
   | {
       text: string;

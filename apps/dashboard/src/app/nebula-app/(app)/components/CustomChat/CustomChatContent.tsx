@@ -8,11 +8,11 @@ import { useCallback, useState } from "react";
 import type { ThirdwebClient } from "thirdweb";
 import { useActiveWalletConnectionStatus } from "thirdweb/react";
 import type { NebulaContext } from "../../api/chat";
-import type { NebulaUserMessage } from "../../api/types";
 import type { ExamplePrompt } from "../../data/examplePrompts";
 import { NebulaIcon } from "../../icons/NebulaIcon";
 import { ChatBar } from "../ChatBar";
 import { type CustomChatMessage, CustomChats } from "./CustomChats";
+import type { UserMessage, UserMessageContent } from "./CustomChats";
 
 export default function CustomChatContent(props: {
   authToken: string | undefined;
@@ -60,13 +60,15 @@ function CustomChatContentLoggedIn(props: {
   const connectionStatus = useActiveWalletConnectionStatus();
 
   const handleSendMessage = useCallback(
-    async (userMessage: NebulaUserMessage) => {
+    async (userMessage: UserMessage) => {
       const abortController = new AbortController();
       setUserHasSubmittedMessage(true);
       setIsChatStreaming(true);
       setEnableAutoScroll(true);
 
-      const textMessage = userMessage.content.find((x) => x.type === "text");
+      const textMessage = userMessage.content.find(
+        (x: UserMessageContent) => x.type === "text",
+      );
 
       trackEvent({
         category: "siwa",
@@ -79,7 +81,7 @@ function CustomChatContentLoggedIn(props: {
         ...prev,
         {
           type: "user",
-          content: userMessage.content,
+          content: userMessage.content as UserMessageContent[],
         },
         // instant loading indicator feedback to user
         {
@@ -92,7 +94,7 @@ function CustomChatContentLoggedIn(props: {
       // deep clone `userMessage` to avoid mutating the original message, its a pretty small object so JSON.parse is fine
       const messageToSend = JSON.parse(
         JSON.stringify(userMessage),
-      ) as NebulaUserMessage;
+      ) as UserMessage;
 
       try {
         setChatAbortController(abortController);
@@ -256,7 +258,15 @@ function CustomChatContentLoggedIn(props: {
         }}
         isChatStreaming={isChatStreaming}
         prefillMessage={undefined}
-        sendMessage={handleSendMessage}
+        sendMessage={(input) => {
+          // Ensure input is a string
+          const text = typeof input === "string" ? input : "";
+          const userMessage: UserMessage = {
+            type: "user",
+            content: [{ type: "text", text }],
+          };
+          handleSendMessage(userMessage);
+        }}
         className="rounded-none border-x-0 border-b-0"
         allowImageUpload={false}
       />
@@ -301,7 +311,7 @@ function LoggedOutStateChatContent() {
 }
 
 function EmptyStateChatPageContent(props: {
-  sendMessage: (message: NebulaUserMessage) => void;
+  sendMessage: (message: UserMessage) => void;
   examplePrompts: { title: string; message: string }[];
 }) {
   return (
@@ -328,7 +338,7 @@ function EmptyStateChatPageContent(props: {
             size="sm"
             onClick={() =>
               props.sendMessage({
-                role: "user",
+                type: "user",
                 content: [
                   {
                     type: "text",
