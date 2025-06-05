@@ -258,12 +258,12 @@ function CustomChatContentLoggedIn(props: {
         }}
         isChatStreaming={isChatStreaming}
         prefillMessage={undefined}
-        sendMessage={(input) => {
-          // Ensure input is a string
-          const text = typeof input === "string" ? input : "";
+        sendMessage={(siwaUserMessage) => {
           const userMessage: UserMessage = {
             type: "user",
-            content: [{ type: "text", text }],
+            content: siwaUserMessage.content
+              .filter((c) => c.type === "text")
+              .map((c) => ({ type: "text", text: c.text })),
           };
           handleSendMessage(userMessage);
         }}
